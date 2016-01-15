@@ -10,10 +10,8 @@ from openerp.tools.translate import _
 
 class sale_order_line(osv.osv):
     _inherit = 'sale.order.line'
-
     def _get_analytic_track_service(self, cr, uid, context=None):
         return super(sale_order_line, self)._get_analytic_track_service(cr, uid, context=context) + ['task']
-
 
 class procurement_order(osv.osv):
     _name = "procurement.order"

@@ -2,6 +2,7 @@
 
 from openerp import models, fields, api
 from datetime import datetime, timedelta
+from openerp.tools.translate import _
 
 class ProjectTaskType(models.Model):
     _inherit = 'project.task.type'
@@ -21,7 +22,7 @@ class Task(models.Model):
 
     rating_latest = fields.Float(string="Latest Rating", related="rating_ids.rating", group_operator="avg", store=True)
     rating_feedback = fields.Text(string="Rating Feedback", related="rating_ids.feedback", store=True)
-    rating_text = fields.Text(string="Rating Feedback", compute="_get_rating_text", store=True)
+    rating_text = fields.Text(string="Rating Feedback", compute="_get_rating_text")
 
     # This method should be called once a day by the scheduler
     @api.model
@@ -63,9 +64,8 @@ class Task(models.Model):
         return result
 
     @api.one
-    @api.depends('rating_ids.rating','project_id.rating_status')
     def _get_rating_text(self):
-        if self.project_id.rating_status=='no':
+        if (self.project_id.rating_status=='no') or (not self.rating_ids):
             self.rating_text = False
             return True
         self.rating_text = {

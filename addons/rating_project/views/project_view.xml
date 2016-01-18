@@ -23,9 +23,9 @@
             <field name="arch" type="xml">
                 <xpath expr="//div[@name='button_box']" position="inside">
                     <button name="%(action_task_rating_open)d" type="action"
-                            attrs="{'invisible': [('rating_text','=',False)]}"
+                            attrs="{'invisible': [('rating_text','=',0)]}"
                             class="oe_stat_button" icon="fa-smile-o">
-                        <field name="rating_text" string="Customer Rating:"/>
+                        <field name="rating_text" string="Rating" widget="statinfo"/>
                     </button>
                 </xpath>
             </field>
@@ -43,8 +43,8 @@
                 <xpath expr="//div[@class='oe_kanban_bottom_left']" position="inside">
                     <b t-if="record.rating_ids.raw_value.length">
                         <span class="fa fa-fw mt4 fa-thumbs-up text-success" t-if="record.rating_latest.value==10" title="Latest rating: happy"/>
-                        <span class="fa fa-fw mt4 fa-thumbs-o-down text-warning" t-if="record.rating_latest.value==0" title="Latest rating: not happy"/>
-                        <span class="fa fa-fw mt4 fa-thumbs-down text-danger" t-if="record.rating_latest.value==5" title="Latest rating: average"/>
+                        <span class="fa fa-fw mt4 fa-thumbs-down text-danger" t-if="record.rating_latest.value==0" title="Latest rating: not happy"/>
+                        <span class="fa fa-fw mt4 fa-thumbs-o-down text-warning" t-if="record.rating_latest.value==5" title="Latest rating: average"/>
                     </b>
                 </xpath>
             </field>

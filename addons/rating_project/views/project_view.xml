@@ -1,6 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
     <data>
+
+        <record id="action_task_rating_open" model="ir.actions.act_window">
+            <field name="name">Customer Ratings</field>
+            <field name="res_model">rating.rating</field>
+            <field name="view_mode">kanban,pivot,graph</field>
+            <field name="context">{}</field>
+            <field name="domain">[('res_model','=','project.task'),('res_id','=',active_id)]</field>
+            <field name="help" type="html">
+                <p>
+                    Customer ratings on tasks. If you have no rating, 
+                    change yoru project Settings to activate it.
+                </p>
+            </field>
+        </record>
+
+        <record id="view_task_form_rating" model="ir.ui.view">
+            <field name="name">project.task.form.rating</field>
+            <field name="model">project.task</field>
+            <field name="inherit_id" ref="project.view_task_form2"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="%(action_task_rating_open)d" type="action"
+                            attrs="{'invisible': [('rating_text','=',False)]}"
+                            class="oe_stat_button" icon="fa-smile-o">
+                        <field name="rating_text" string="Customer Rating:"/>
+                    </button>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_task_kanban_rating" model="ir.ui.view">
+            <field name="name">project.task.kanban.rating</field>
+            <field name="model">project.task</field>
+            <field name="inherit_id" ref="project.view_task_kanban"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='color']" position="after">
+                    <field name="rating_latest"/>
+                    <field name="rating_ids"/>
+                </xpath>
+                <xpath expr="//div[@class='oe_kanban_bottom_left']" position="inside">
+                    <b t-if="record.rating_ids.raw_value.length">
+                        <span class="fa fa-fw mt4 fa-thumbs-up text-success" t-if="record.rating_latest.value==10" title="Latest rating: happy"/>
+                        <span class="fa fa-fw mt4 fa-thumbs-o-down text-warning" t-if="record.rating_latest.value==0" title="Latest rating: not happy"/>
+                        <span class="fa fa-fw mt4 fa-thumbs-down text-danger" t-if="record.rating_latest.value==5" title="Latest rating: average"/>
+                    </b>
+                </xpath>
+            </field>
+        </record>
+
         <!-- project.project form view with rating satisfaction state button -->
         <record id="view_project_project_rating_form" model="ir.ui.view">
             <field name="name">project.project.rating.form.view</field>
@@ -10,16 +59,19 @@
             <field name="arch" type="xml">
                 <div name="button_box" position="inside">
                     <button name="action_view_task_rating"
-                        attrs="{'invisible': ['|',  '|', ('rating_status', '=', 'no'), ('use_tasks','=', False), ('percentage_satisfaction_task', '=', -1)]}"
+                        attrs="{'invisible': [('rating_status', '=', 'no')]}"
                         class="oe_stat_button oe_percent"
                         type="object"
                         icon="fa-smile-o">
-                        <field string="On tasks" name="percentage_satisfaction_task" widget="statinfo"/>
+                        <field string="% On tasks" name="rating_satisfaction" widget="statinfo"/>
                     </button>
                 </div>
                 <xpath expr="//field[@name='partner_id']" position="after">
-                    <field name="rating_status"/>
-                    <field name="rating_status_period"/>
+                    <label for="rating_status"/>
+                    <div>
+                        <field name="rating_status" class="oe_inline"/>
+                        <field name="rating_status_period" attrs="{'invisible': [('rating_status','&lt;&gt;','periodic')]}" class="oe_inline"/>
+                    </div>
                 </xpath>
             </field>
         </record>
@@ -37,6 +89,22 @@
                 </xpath>
             </field>
         </record>
+
+        <record id="action_view_task_rating" model="ir.actions.act_window">
+            <field name="name">Customer Ratings</field>
+            <field name="res_model">rating.rating</field>
+            <field name="view_mode">kanban,pivot,graph</field>
+            <field name="context">{}</field>
+            <field name="domain">[('res_model','=','project.task')]</field>
+            <field name="help" type="html">
+                <p>
+                    Customer ratings on tasks. If you have no rating, 
+                    change yoru project Settings to activate it.
+                </p>
+            </field>
+        </record>
+        <menuitem action="action_view_task_rating" id="menu_action_view_task_rating" parent="base.menu_project_report" sequence="5"/>
+
 
     </data>
 </openerp>

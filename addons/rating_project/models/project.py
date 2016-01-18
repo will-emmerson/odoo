@@ -21,9 +21,22 @@ class Task(models.Model):
 
     rating_latest = fields.Float(string="Latest Rating", related="rating_ids.rating", group_operator="avg", store=True)
     rating_feedback = fields.Text(string="Rating Feedback", related="rating_ids.feedback", store=True)
+    rating_text = fields.Text(string="Rating Feedback", compute="_get_rating_text", store=True)
 
+    # This method should be called once a day by the scheduler
     @api.model
-    def _send_rating_all(self, periods=['daily']):
+    def _send_rating_all(self):
+        periods = ['daily']
+        if datetime.today().day in (1,15):
+            periods.append('bimonthly')
+        if datetime.today().day == 1:
+            periods.append('monthly')
+            if datetime.today().month in (1,4,7,10):
+                periods.append('quarterly')
+            if datetime.today().month in (1,):
+                periods.append('yearly')
+        if datetime.today().weekday() == 2:
+            periods.append('weekly')
         project_ids = self.env['project.project'].search([('rating_status','=','periodic'),('rating_status_period','in',periods)])
         return self.search([('project_id', 'in', project_ids)])._send_rating_mail()
 
@@ -49,31 +62,36 @@ class Task(models.Model):
             self._send_rating_mail()
         return result
 
+    @api.one
+    @api.depends('rating_ids.rating','project_id.rating_status')
+    def _get_rating_text(self):
+        if self.project_id.rating_status=='no':
+            self.rating_text = False
+            return True
+        self.rating_text = {
+            0: _('Not happy'),
+            5: _('Average'),
+            10: _('Happy')
+        }.get(self.rating_latest, _('Unknown rating'))
+
 class Project(models.Model):
     _inherit = "project.project"
 
     @api.one
-    @api.depends('percentage_satisfaction_task')
-    def _compute_percentage_satisfaction_project(self):
-        self.percentage_satisfaction_project = self.percentage_satisfaction_task
-
-    @api.one
     @api.depends('tasks.rating_ids.rating')
-    def _compute_percentage_satisfaction_task(self):
-        domain = [('create_date','>=',datetime.today() - timedelta(days=14))]
+    def _compute_rating_satisfaction(self):
+        domain = [('create_date','>=',(datetime.today() - timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S'))]
         activity = self.tasks.rating_get_grades(domain)
-        self.percentage_satisfaction_task = activity['great'] * 100 / sum(activity.values()) if sum(activity.values()) else -1
+        self.rating_satisfaction = activity['great'] * 100 / sum(activity.values()) if sum(activity.values()) else -1
 
-    percentage_satisfaction_task = fields.Integer(
-        compute='_compute_percentage_satisfaction_task', string='% Happy', store=True, default=-1)
-    percentage_satisfaction_project = fields.Integer(
-        compute="_compute_percentage_satisfaction_project", string="% Happy", store=True, default=-1)
+    rating_satisfaction = fields.Integer(
+        compute='_compute_rating_satisfaction', string='% Happy', store=True, default=-1)
 
-    rating_status = fields.Selection([('no','No Customer Rating'), ('stage','On Stage Change'), ('periodic','Periodic ratings')], 'Tasks Customers Rating', default='no')
+    rating_status = fields.Selection([('no','No customer rating'), ('stage','On stage change'), ('periodic','Periodically')], 'Customer Ratings', default='no')
     rating_status_period = fields.Selection([
             ('daily','every day'), ('weekly','every week'), ('bimonthly','twice a month'), 
             ('monthly','one a month'), ('quarterly','quarterly'), ('yearly','yearly')
-        ], 'Tasks Customers Rating', default='monthly')
+        ], 'Rating Frequency', default='monthly')
 
     @api.multi
     def action_view_task_rating(self):
@@ -85,7 +103,6 @@ class Project(models.Model):
     def action_view_all_rating(self):
         """ return the action to see all the rating about the all sort of activity of the project (tasks, issues, ...) """
         return self.action_view_task_rating()
-
 
 
 class Rating(models.Model):

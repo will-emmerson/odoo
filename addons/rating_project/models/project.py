@@ -42,16 +42,15 @@ class Task(models.Model):
         return self.search([('project_id', 'in', project_ids)])._send_rating_mail()
 
     @api.multi
-    def _get_task_customer(self):
-        self.ensure_one()
-        return self.project_id.partner_id or None
-
-    @api.multi
     def _send_rating_mail(self):
         for task in self:
             template = task.stage_id.rating_template_id
             if template:
-                partner = self._get_task_customer()
+                partner = None
+                if self.sale_line_id:
+                    partner = self.sale_line_id.order_id.partner_id
+                else:
+                    partner = self.project_id.partner_id or None
                 rated_partner_id = self.user_id.partner_id
                 if partner and rated_partner_id:
                     self.rating_send_request(template, partner, rated_partner_id)

@@ -93,12 +93,34 @@ exports.PosModel = Backbone.Model.extend({
         });
     },
     after_load_server_data: function(){
+        this.load_balances();
          this.load_orders();
          this.set_start_order();
          if(this.config.use_proxy){
              return this.connect_to_proxy();
          }
     },
+    load_balances: function () {
+        // load balances from FM and save
+        // unfortunately this is a bit difficult in development because of cross-domain origin stuff
+        // pass register id
+
+        var data = {
+            'account': this.config.name,
+            'organisation': this.config.company_id[1]
+        };
+
+        var self = this;
+
+        $.get('//0.0.0.0:8000/till/balance', data)
+            .done(function (data) {
+                console.log(data);
+                self.db.balances = data;
+            });
+
+
+    },
+
     // releases ressources holds by the model at the end of life of the posmodel
     destroy: function(){
         // FIXME, should wait for flushing, return a deferred to indicate successfull destruction
@@ -181,14 +203,6 @@ exports.PosModel = Backbone.Model.extend({
             self.units_by_id = units_by_id;
         }
     },{
-        model:  'res.partner',
-        fields: ['name','street','city','state_id','country_id','vat','phone','zip','mobile','email','barcode','write_date'],
-        domain: [['customer','=',true]], 
-        loaded: function(self,partners){
-            self.partners = partners;
-            self.db.add_partners(partners);
-        },
-    },{
         model:  'res.country',
         fields: ['name'],
         loaded: function(self,countries){
@@ -246,6 +260,29 @@ exports.PosModel = Backbone.Model.extend({
                 self.pos_session.sequence_number = Math.max(self.pos_session.sequence_number, orders[i].data.sequence_number+1);
             }
        },
+    },
+    {
+    model:  'res.partner',
+    fields: ['name','street','city','state_id','country_id','vat','phone','zip','mobile','email','barcode','write_date'],
+    domain: [['customer','=',true]],
+    loaded: function(self,partners){
+        self.partners = partners;
+
+
+        var data = {
+            'account': self.config.name,
+            'organisation': self.config.company_id[1]
+        };
+
+        $.get('//0.0.0.0:8000/till/balance', data)
+            .done(function (data) {
+                console.log(data);
+                self.db.balances = data;
+                self.db.add_partners(partners);
+            });
+
+        },
+
     },{
         model:  'res.users',
         fields: ['name','pos_security_pin','groups_id','barcode'],

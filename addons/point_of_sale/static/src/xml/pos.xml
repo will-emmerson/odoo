@@ -5,7 +5,7 @@
         <div class="pos">
             <div class="pos-topheader">
                 <div class="pos-branding">
-                    <img class="pos-logo" src="/point_of_sale/static/src/img/logo.png" />
+                    <img class="pos-logo" src="/point_of_sale/static/src/img/pebble.jpg" />
                     <span class="placeholder-UsernameWidget"></span>
                 </div>
                 <div class="pos-rightheader">
@@ -114,7 +114,7 @@
                     <t t-esc="widget.pos.get_client().name" />
                 </t>
                 <t t-if="!widget.pos.get_client()">
-                    Customer
+                    Pupil
                 </t>
             </button>
             <button class='button pay'>

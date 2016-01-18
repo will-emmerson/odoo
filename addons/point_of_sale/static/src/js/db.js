@@ -255,6 +255,12 @@ var PosDB = core.Class.extend({
         for(var i = 0, len = partners.length; i < len; i++){
             partner = partners[i];
 
+            // get balance using id
+            //if (this.balances) {
+                var balance = this.balances[partner.id];
+                partner.name += ' £' + balance;
+            //}
+
             if (    this.partner_write_date && 
                     this.partner_by_id[partner.id] &&
                     new Date(this.partner_write_date).getTime() + 1000 >=
